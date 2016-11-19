@@ -9,8 +9,10 @@
 
 'use strict';
 var interceptor = require('../../../commons/trace/method_interceptor.js');
+var cls = require('../../../commons/cls');
 var PinpointNodejsAgent = global.PinpointNodejsAgent;
 var PinpointMetaData = require('../../../utils/constants.js').PinpointMetaData;
+var PinpointTraceMetaData = require('../../../utils/constants.js').PinpointTraceMetaData;
 var PluginConstants = require('./amqp-rpc_constants.js').PluginConstants;
 var ServiceTypeConstants = require('./amqp-rpc_constants.js').ServiceTypeConstants;
 var TraceContext = require('../../../commons/trace/trace_context.js').TraceContextFactory;
@@ -65,15 +67,19 @@ var wrap = function (amqpRPC) {
         spanEventRecorder.recordDestinationId(PluginConstants.destinationId);
 
    		//modify callback
+        var ns = cls.getNamespace(PinpointTraceMetaData.TRACE_CONTEXT);
    		function callback (ret) {
    		
    		    if (original_callback && (typeof original_callback) === 'function') {
+                //bind the callback
+                original_callback = ns.bind(original_callback);
    		        original_callback(ret);
                 traceContext.endTraceObject();
    		    }
    		}
 
-   		var args = [cmd, params, callback, context, options];
+        var cb = ns.bind(callback);
+   		var args = [cmd, params, cb, context, options];
         try {
    		    var ret = original.apply(proxy, args);
             if ((original_callback === undefined) || (typeof original_callback) !== 'function') {

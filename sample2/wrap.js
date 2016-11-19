@@ -9,7 +9,9 @@
 
 'use strict';
 var interceptor = require('../../../commons/trace/mehtod_interceptor.js');
+var cls = require('../../../commons/cls');
 var PinpointNodejsAgent = global.PinpointNodejsAgent;
+var PinpointTraceMetaData = require('../../../utils/constants.js').PinpointTraceMetaData;
 var ServiceTypeConstants = require('./https_constants.js').ServiceTypeConstants;
 var TraceContext = require('../../../commons/trace/trace_context.js').TraceContextFactory;
 
@@ -53,7 +55,10 @@ var wrap = function (https) {
             traceContext.endTraceObject();
         }
 
-        var args = [options, callback];
+        //bind the callback, that the callback can get the context
+        var ns = cls.getNamespace(PinpointTraceMetaData.TRACE_CONTEXT);
+        var cb = ns.bind(callback);
+        var args = [options, cb];
         var ret = original.apply(proxy, args);
         //end current trace
         traceContext.endTraceObject();
