@@ -30,6 +30,10 @@ var wrap = function (https) {
 
         //start new transaction
         var traceContext = TraceContextFactory();
+        if(!traceContext){
+            //not sampled, return the original func
+            return original.apply(proxy, argument);
+        }
         //create current span record and set span detail info
         var spanRecorder = traceContext.newTraceObject();
         spanRecorder.recordRpcName(options.path);

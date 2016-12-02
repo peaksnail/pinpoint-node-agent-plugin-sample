@@ -22,8 +22,7 @@ var wrap = function (https) {
 
     function https0get (original, proxy, argument) {
     
-        var options = arguments[0];
-        var original_callback = arguments[1];
+        var options = argument[0];
 
 
         //first get pinpoint trace metadata from request
@@ -43,6 +42,9 @@ var wrap = function (https) {
 
         //start new trace,and pass the parent span info
         var traceContext = TraceContextFactory();
+        if(!traceContext){
+            return original.apply(proxy, argument);
+        }
         var spanRecorder = traceContext.newTraceobject(traceId); 
         spanRecorder.recordRpcname(options.path);
         spanRecorder.recordApiId('https.get');
@@ -56,8 +58,7 @@ var wrap = function (https) {
         }
 
 
-        var args = [options, original_callback];
-        var ret = original.apply(proxy, args);
+        var ret = original.apply(proxy, argument);
         traceContext.endTraceObject();
         return ret;
     }

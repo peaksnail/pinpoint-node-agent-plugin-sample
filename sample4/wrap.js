@@ -25,6 +25,7 @@ var wrap = function (amqpRPC) {
     //modify amqpRPC 
     function amqp1rpc0amqpRPC0call (original, proxy, argument) {
 
+        var ns = cls.getNamespace(PinpointTraceMetaData.TRACE_CONTEXT);
     	var cmd = argument[0];
 		var params = argument[1];
 		var original_callback = argument[2];
@@ -35,10 +36,16 @@ var wrap = function (amqpRPC) {
             params = {};
         }
         var traceContext = TraceContextFactory();
+        if(!traceContext){
+            if(original_callback && (typeof original_callback) === 'function'){
+                argument[2] = ns.bind(original_callback);
+            }
+            return original.apply(proxy, argument);
+        }
         if (!traceContext.hasInit()) {
             var spanRecorder = traceContext.newTraceObject();
             spanRecorder.recordServiceType(ServiceTypeConstants.serviceType);
-            spanRecorder.recordApiId(TraceContext.getCallerFunctionName());
+            spanRecorder.recordApiId('amqp-rpc.amqpRPC.call');
             try{
                 //try to record rpc name
                 spanRecorder.recordRpcName(params.t);
@@ -67,7 +74,6 @@ var wrap = function (amqpRPC) {
         spanEventRecorder.recordDestinationId(PluginConstants.destinationId);
 
    		//modify callback
-        var ns = cls.getNamespace(PinpointTraceMetaData.TRACE_CONTEXT);
    		function callback (ret) {
    		
    		    if (original_callback && (typeof original_callback) === 'function') {
